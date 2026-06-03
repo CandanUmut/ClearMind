@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* light — warm paper */
+  --bg:        #F7F4ED;   /* warm off-white paper */
+  --surface:   #FFFFFF;
+  --surface-2: #F1ECE1;
+  --ink:       #20211C;   /* warm near-black */
+  --ink-soft:  #4A4B43;
+  --muted:     #8A897E;
+  --line:      #E4DFD3;
+
+  --accent:    #1F6F5C;   /* pine — brand/primary (calm, focus, growth) */
+  --accent-ink:#14503F;
+  --reward:    #E0892F;   /* warm amber — streaks, rewards, correct-glow */
+
+  --correct:   #2E8B6F;
+  --incorrect: #C25A4B;   /* clay red, not alarmist */
+  --info:      #2F6F8F;
+
+  --radius:    18px;
+  --radius-sm: 12px;
+  --shadow-1:  0 1px 2px rgba(32,33,28,.06), 0 4px 16px rgba(32,33,28,.05);
+  --shadow-2:  0 2px 6px rgba(32,33,28,.08), 0 16px 40px rgba(32,33,28,.10);
+  --maxw:      560px;     /* mobile-first content column */
+}
+
+[data-theme="dark"] {
+  --bg:        #15160F;
+  --surface:   #1E1F17;
+  --surface-2: #262720;
+  --ink:       #F2EEE2;
+  --ink-soft:  #C9C5B6;
+  --muted:     #8E8C7E;
+  --line:      #33342B;
+  --accent:    #4FBF9E;
+  --accent-ink:#2E8B6F;
+  --reward:    #EFA94A;
+  --correct:   #4FBF9E;
+  --incorrect: #E07E6E;
+  --info:      #6FB3D2;
+  --shadow-1:  0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
+  --shadow-2:  0 2px 6px rgba(0,0,0,.5), 0 16px 40px rgba(0,0,0,.45);
+}
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: theme('fontFamily.body');
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3 {
+    font-family: theme('fontFamily.display');
+    font-weight: 500;
+    line-height: 1.15;
+  }
+
+  /* Tabular figures everywhere mono is used keep scores/timers from jittering. */
+  .tnum {
+    font-family: theme('fontFamily.mono');
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Hide content visually but keep it for screen readers. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Home-screen orchestrated load cascade. Disabled under reduced-motion above. */
+@keyframes cm-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cm-rise {
+  opacity: 0;
+  animation: cm-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
