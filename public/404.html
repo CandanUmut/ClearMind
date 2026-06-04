@@ -5,9 +5,14 @@
     <title>ClearMind</title>
     <script>
       // GitHub Pages SPA fallback: redirect any deep link back to the app root.
-      // ClearMind uses in-app view state (no router), so the root is always correct.
-      var base = '/clearmind/';
-      window.location.replace(base + window.location.search + window.location.hash);
+      // ClearMind uses in-app view state (no router), so the project root is
+      // always correct. Derive the root from the first path segment (the repo
+      // name) so this works regardless of repo-name casing.
+      (function () {
+        var seg = window.location.pathname.split('/')[1] || '';
+        var root = seg ? '/' + seg + '/' : '/';
+        window.location.replace(root + window.location.search + window.location.hash);
+      })();
     </script>
   </head>
   <body></body>
