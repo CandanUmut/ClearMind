@@ -37,7 +37,11 @@ export default function App() {
       window.localStorage.getItem('clearmind:debug') === '1'
     );
   }, []);
-  const reducedMotion = state.settings.reducedMotion;
+  const reducedMotion =
+    state.settings.reducedMotion ||
+    (typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) ||
+    false;
 
   if (!state.settings.onboarded) {
     return (
