@@ -8,6 +8,14 @@ import './calibration';
 import './estimation';
 import './intention';
 import './reflection';
-// Phase 9–11 modules are appended here as they are built.
+// Phase 9 — visual pack
+import './patternMatrix';
+import './oddOneOut';
+import './gridRecall';
+// Phase 10 — logic pack
+import './numberSequence';
+import './nonogram';
+// Phase 11 — problem pack
+import './wordProblem';
 
 export {};
