@@ -2,7 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { installTranslationGuard } from './lib/translateGuard';
 import './index.css';
+
+// Must run before React renders: makes the DOM resilient to Google Translate /
+// Chrome auto-translate moving nodes (otherwise React crashes on re-render).
+installTranslationGuard();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

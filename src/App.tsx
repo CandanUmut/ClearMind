@@ -1,21 +1,23 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { Suspense, useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { DailySession, SessionSummary } from './types';
 import { useUserState } from './hooks/useUserState';
 import { dailyKey } from './lib/seed';
 import { buildPracticeSession, buildSession } from './engine/session';
 import { completeDailySession } from './lib/streak';
 import { sound } from './lib/sound';
+import { clearChunkReloadGuard, lazyRetry } from './lib/lazyRetry';
 import { Home } from './components/Home';
 import { Onboarding } from './components/Onboarding';
 import { SessionRunner } from './components/SessionRunner';
 import { Results } from './components/Results';
 import { SeedInspector } from './components/SeedInspector';
 
-// Code-split the heavier, less-frequently-visited screens.
-const Stats = lazy(() => import('./components/Stats').then((m) => ({ default: m.Stats })));
-const About = lazy(() => import('./components/About').then((m) => ({ default: m.About })));
-const Explore = lazy(() => import('./components/Explore').then((m) => ({ default: m.Explore })));
-const EndlessPractice = lazy(() =>
+// Code-split the heavier, less-frequently-visited screens. lazyRetry recovers
+// from stale-chunk 404s (after a new deploy) by reloading once.
+const Stats = lazyRetry(() => import('./components/Stats').then((m) => ({ default: m.Stats })));
+const About = lazyRetry(() => import('./components/About').then((m) => ({ default: m.About })));
+const Explore = lazyRetry(() => import('./components/Explore').then((m) => ({ default: m.Explore })));
+const EndlessPractice = lazyRetry(() =>
   import('./components/EndlessPractice').then((m) => ({ default: m.EndlessPractice })),
 );
 
@@ -43,6 +45,11 @@ export default function App() {
     (typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) ||
     false;
+
+  // App has rendered successfully — re-arm chunk-reload recovery for next time.
+  useEffect(() => {
+    clearChunkReloadGuard();
+  }, []);
 
   // Keep the audio engine in sync with the user's sound/voice preferences.
   useEffect(() => {
