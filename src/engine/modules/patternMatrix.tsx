@@ -3,6 +3,7 @@ import { int, pick, shuffle } from '../../lib/rng';
 import { register, type ExerciseModule, type GeneratedExercise } from '../registry';
 import { CellGlyph, describeCell, SHAPE_KINDS, type CellSpec } from '../../components/svg/Cell';
 import { ChoiceBlock } from '../../components/blocks/ChoiceBlock';
+import { categoryColor } from '../../lib/categories';
 
 // ── Difficulty mapping ───────────────────────────────────────────────────────
 //   number of simultaneous rules: 1 (<0.34) → 2 (<0.67) → 3
@@ -113,10 +114,14 @@ function verify(
 
 function MatrixPrompt({ grid }: MatrixPuzzle) {
   return (
-    <div className="mx-auto grid w-fit grid-cols-3 gap-2 rounded border border-line bg-surface p-3 shadow-1">
+    <div className="mx-auto grid w-full max-w-[300px] grid-cols-3 gap-2 rounded border border-line bg-surface p-3 shadow-1">
       {grid.flat().map((cell, i) => (
-        <div key={i} className="flex h-[80px] w-[80px] items-center justify-center rounded-sm bg-surface-2/40">
-          {cell ? <CellGlyph spec={cell} /> : <span className="text-display text-muted">?</span>}
+        <div
+          key={i}
+          className="flex aspect-square items-center justify-center rounded-sm"
+          style={{ background: cell ? 'color-mix(in srgb, var(--cat-visual) 7%, var(--surface-2))' : 'color-mix(in srgb, var(--cat-visual) 12%, var(--surface-2))' }}
+        >
+          {cell ? <CellGlyph spec={cell} /> : <span className="text-display font-display text-muted">?</span>}
         </div>
       ))}
     </div>
@@ -157,6 +162,7 @@ export const patternMatrix: ExerciseModule<MatrixPuzzle, CellSpec, CellSpec> = {
       reducedMotion={reducedMotion}
       evidence={patternMatrix.evidence}
       columns={3}
+      accent={categoryColor('visual')}
     />
   ),
   summarize: (_ex, _answer, result, summary) => {

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { EstimationExercise, EstimationResponse } from '../../types';
+import { sound } from '../../lib/sound';
 import { Button } from '../ui/Button';
 import { EvidenceNote } from '../ui/EvidenceNote';
 
@@ -30,6 +31,7 @@ export function EstimationBlock({ exercise, onDone }: Props) {
 
   function reveal() {
     responses.current = [...responses.current, { low: lo, high: hi }];
+    sound.feedback(hit, hit ? 'In range' : 'Outside your range');
     setPhase('reveal');
   }
 
@@ -49,7 +51,7 @@ export function EstimationBlock({ exercise, onDone }: Props) {
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <p className="text-small text-muted">Estimation · {index + 1} of {total}</p>
+        <p className="text-small font-medium" style={{ color: 'var(--cat-judgment)' }}>Estimation · {index + 1} of {total}</p>
         <h2 className="text-h2 text-ink">90% confidence interval</h2>
       </header>
 

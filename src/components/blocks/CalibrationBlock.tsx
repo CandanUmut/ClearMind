@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { CalibrationExercise, CalibrationResponse } from '../../types';
+import { sound } from '../../lib/sound';
 import { Button } from '../ui/Button';
 import { ConfidenceSlider } from '../ui/ConfidenceSlider';
 import { EvidenceNote } from '../ui/EvidenceNote';
@@ -30,6 +31,7 @@ export function CalibrationBlock({ exercise, onDone }: Props) {
       ...responses.current,
       { choice, confidence, consideredOpposite },
     ];
+    sound.feedback(choice === item.answer);
     setPhase('reveal');
   }
 
@@ -48,7 +50,7 @@ export function CalibrationBlock({ exercise, onDone }: Props) {
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <p className="text-small text-muted">Judgment · {index + 1} of {total}</p>
+        <p className="text-small font-medium" style={{ color: 'var(--cat-judgment)' }}>Judgment · {index + 1} of {total}</p>
         <h2 className="text-h2 text-ink">Calibration</h2>
       </header>
 
@@ -61,10 +63,18 @@ export function CalibrationBlock({ exercise, onDone }: Props) {
           'rounded border p-6 shadow-1 ' +
           (phase === 'reveal'
             ? correct
-              ? 'border-correct bg-surface'
-              : 'border-incorrect bg-surface'
-            : 'border-line bg-surface')
+              ? 'border-correct cm-pop'
+              : 'border-incorrect cm-shake'
+            : 'border-line')
         }
+        style={{
+          background:
+            phase === 'reveal'
+              ? correct
+                ? 'color-mix(in srgb, var(--correct) 8%, var(--surface))'
+                : 'color-mix(in srgb, var(--incorrect) 8%, var(--surface))'
+              : 'var(--surface)',
+        }}
       >
         <p className="text-h3 leading-snug text-ink">{item.statement}</p>
         <p className="mt-2 text-small text-muted">{item.category}</p>

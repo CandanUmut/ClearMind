@@ -207,6 +207,10 @@ export interface UserSettings {
   theme: ThemeMode;
   reducedMotion: boolean;
   onboarded: boolean;
+  /** Sound-effect chimes on answers. */
+  sound: boolean;
+  /** Spoken feedback via speech synthesis. */
+  voice: boolean;
 }
 
 export interface UserState {

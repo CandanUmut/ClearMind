@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { MentalMathExercise } from '../../types';
+import { sound } from '../../lib/sound';
 import { Button } from '../ui/Button';
 import { EvidenceNote } from '../ui/EvidenceNote';
 
@@ -23,6 +24,9 @@ export function MentalMathBlock({ exercise, onDone }: Props) {
 
   function submit() {
     const n = value.trim() === '' ? NaN : Number(value);
+    // Quiet chime only (no spoken feedback) so the rapid warmup stays calm.
+    if (n === problem.answer) sound.correct();
+    else sound.wrong();
     answers.current = [...answers.current, n];
     setValue('');
     if (index + 1 >= total) {
@@ -35,7 +39,7 @@ export function MentalMathBlock({ exercise, onDone }: Props) {
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <p className="text-small text-muted">Warmup · {index + 1} of {total}</p>
+        <p className="text-small font-medium" style={{ color: 'var(--cat-warmup)' }}>Warmup · {index + 1} of {total}</p>
         <h2 className="text-h2 text-ink">Mental Math</h2>
       </header>
 

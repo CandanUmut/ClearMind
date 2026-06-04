@@ -20,6 +20,13 @@
   --incorrect: #C25A4B;   /* clay red, not alarmist */
   --info:      #2F6F8F;
 
+  /* per-category accent hues — calm, earthy, clearly distinct */
+  --cat-warmup:   #C28A2E;  /* gold */
+  --cat-judgment: #2E7D6A;  /* pine-green */
+  --cat-visual:   #3F6FB0;  /* blue */
+  --cat-logic:    #8158A6;  /* violet */
+  --cat-problem:  #C2693F;  /* terracotta */
+
   --radius:    18px;
   --radius-sm: 12px;
   --shadow-1:  0 1px 2px rgba(32,33,28,.06), 0 4px 16px rgba(32,33,28,.05);
@@ -41,6 +48,11 @@
   --correct:   #4FBF9E;
   --incorrect: #E07E6E;
   --info:      #6FB3D2;
+  --cat-warmup:   #E0A94A;
+  --cat-judgment: #4FBF9E;
+  --cat-visual:   #6F9BE0;
+  --cat-logic:    #B388D6;
+  --cat-problem:  #E0905F;
   --shadow-1:  0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
   --shadow-2:  0 2px 6px rgba(0,0,0,.5), 0 16px 40px rgba(0,0,0,.45);
 }
@@ -118,3 +130,31 @@
   opacity: 0;
   animation: cm-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+/* Warm, calm hero wash for the Home / Results headers. */
+.cm-hero {
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--reward) 16%, transparent), transparent 60%),
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 55%),
+    var(--surface);
+}
+
+/* A subtle category-tinted card: pass --cat inline. */
+.cm-cat-card {
+  border-color: color-mix(in srgb, var(--cat) 35%, var(--line));
+  background: color-mix(in srgb, var(--cat) 6%, var(--surface));
+}
+
+/* Correct / incorrect answer glows. */
+@keyframes cm-pop {
+  0% { transform: scale(0.96); }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.cm-pop { animation: cm-pop 0.28s ease-out; }
+@keyframes cm-shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.cm-shake { animation: cm-shake 0.2s ease-in-out; }

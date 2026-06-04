@@ -33,6 +33,8 @@ export function defaultState(): UserState {
       theme: prefersDark ? 'dark' : 'light',
       reducedMotion: false,
       onboarded: false,
+      sound: true,
+      voice: false,
     },
   };
 }

@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { UserState } from '../types';
 import { dailyKey } from '../lib/seed';
 import { isCompletedToday, liveStreak } from '../lib/streak';
+import { buildSession } from '../engine/session';
+import { getModule } from '../engine/registry';
+import { categoryColor } from '../lib/categories';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Ring } from './ui/Ring';
@@ -16,6 +19,7 @@ interface Props {
   onStats: () => void;
   onAbout: () => void;
   onToggleTheme: () => void;
+  onCycleAudio: () => void;
   onEveningCheck: () => void;
 }
 
@@ -35,7 +39,7 @@ function timeUntilTomorrow(): string {
   return `${h}h ${m}m`;
 }
 
-export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, onToggleTheme, onEveningCheck }: Props) {
+export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, onToggleTheme, onCycleAudio, onEveningCheck }: Props) {
   const today = new Date();
   const todayKey = dailyKey(today);
   const done = isCompletedToday(user, todayKey);
@@ -57,11 +61,41 @@ export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, o
   const todaysIntention = user.intentions.find((i) => i.dateKey === todayKey);
   const showEveningCheck = done && todaysIntention?.kept === null && today.getHours() >= 17;
 
+  // Today's actual lineup (the rotating slot means this changes daily).
+  const lineup = useMemo(
+    () =>
+      buildSession(todayKey, user).blocks.map((b) => {
+        const m = getModule(b.moduleId);
+        return { title: b.title, category: m?.category ?? 'judgment' };
+      }),
+    [todayKey, user],
+  );
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-column flex-col px-5 py-6">
       <div className="mb-8 flex items-center justify-between">
         <StreakFlame count={streak} />
         <div className="flex items-center gap-1">
+          <button
+            onClick={onCycleAudio}
+            aria-label={`Sound ${user.settings.sound ? (user.settings.voice ? 'and voice on' : 'on') : 'off'}`}
+            title={user.settings.sound ? (user.settings.voice ? 'Chimes + voice' : 'Chimes on') : 'Muted'}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-soft hover:bg-surface-2"
+          >
+            {!user.settings.sound ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M11 5 6 9H2v6h4l5 4V5Z" /><path d="m23 9-6 6M17 9l6 6" />
+              </svg>
+            ) : user.settings.voice ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M11 5 6 9H2v6h4l5 4V5Z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M11 5 6 9H2v6h4l5 4V5Z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" />
+              </svg>
+            )}
+          </button>
           <button onClick={onStats} aria-label="Statistics" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-soft hover:bg-surface-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
               <path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" />
@@ -81,19 +115,31 @@ export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, o
 
         {!done ? (
           <>
-            <Card className="cm-rise" interactive style={{ animationDelay: '60ms' }}>
+            <div className="cm-rise cm-hero rounded border border-line p-5 shadow-1" style={{ animationDelay: '60ms' }}>
               <div className="flex items-center gap-4">
                 <Ring value={0}>
                   <span className="tnum text-small text-muted">5m</span>
                 </Ring>
                 <div className="flex-1">
                   <h2 className="text-h3 text-ink">Today’s session</h2>
-                  <p className="text-small text-muted">
-                    Warmup · Calibration · Estimation · Intention · Reflection
-                  </p>
+                  <p className="text-small text-muted">Five short blocks. Different every day.</p>
                 </div>
               </div>
-            </Card>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {lineup.map((b, i) => (
+                  <span
+                    key={i}
+                    className="rounded-full px-2.5 py-1 text-small font-medium"
+                    style={{
+                      background: `color-mix(in srgb, ${categoryColor(b.category)} 14%, transparent)`,
+                      color: categoryColor(b.category),
+                    }}
+                  >
+                    {b.title}
+                  </span>
+                ))}
+              </div>
+            </div>
 
             <div className="cm-rise flex flex-col gap-3" style={{ animationDelay: '120ms' }}>
               <Button full onClick={onStart}>Start today’s 5 minutes</Button>

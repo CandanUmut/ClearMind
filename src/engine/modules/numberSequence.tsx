@@ -2,6 +2,7 @@ import type { BlockResult, RNG } from '../../types';
 import { int, pick, shuffle } from '../../lib/rng';
 import { register, type ExerciseModule, type GeneratedExercise } from '../registry';
 import { ChoiceBlock } from '../../components/blocks/ChoiceBlock';
+import { categoryColor } from '../../lib/categories';
 
 // ── Difficulty mapping ───────────────────────────────────────────────────────
 //   rule family widens with difficulty: arithmetic/geometric → +second-difference
@@ -143,6 +144,7 @@ export const numberSequence: ExerciseModule<SeqPuzzle, number, number> = {
         reducedMotion={reducedMotion}
         evidence={numberSequence.evidence}
         columns={2}
+        accent={categoryColor('logic')}
       />
     );
   },

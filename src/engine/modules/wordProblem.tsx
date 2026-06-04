@@ -2,6 +2,7 @@ import type { BlockResult, RNG } from '../../types';
 import { int, pick, shuffle } from '../../lib/rng';
 import { register, type ExerciseModule, type GeneratedExercise } from '../registry';
 import { ChoiceBlock } from '../../components/blocks/ChoiceBlock';
+import { categoryColor } from '../../lib/categories';
 
 // ── Difficulty mapping ───────────────────────────────────────────────────────
 //   template pool widens with difficulty; number magnitude and step count grow.
@@ -187,6 +188,7 @@ export const wordProblem: ExerciseModule<WPPuzzle, number, number> = {
         reducedMotion={reducedMotion}
         evidence={wordProblem.evidence}
         columns={2}
+        accent={categoryColor('problem')}
       />
     );
   },
