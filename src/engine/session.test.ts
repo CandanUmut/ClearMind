@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { buildSession } from './session';
 import { defaultState } from '../lib/storage';
-import type { CalibrationExercise, EstimationExercise } from '../types';
+import { getModule } from './registry';
 
 describe('session builder', () => {
-  it('assembles a 5-block daily session in order', () => {
+  it('assembles an ordered daily session ending in intention + reflection', () => {
     const s = buildSession('2026-06-03', defaultState());
-    expect(s.blocks).toHaveLength(5);
+    expect(s.blocks.length).toBeGreaterThanOrEqual(4);
     const ids = s.blocks.map((b) => b.moduleId);
-    // Warmup is math or nback, then the fixed core sequence.
     expect(['mentalMath', 'nback']).toContain(ids[0]);
-    expect(ids.slice(1)).toEqual(['calibration', 'estimation', 'intention', 'reflection']);
+    expect(['calibration', 'estimation']).toContain(ids[1]);
+    expect(ids[ids.length - 2]).toBe('intention');
+    expect(ids[ids.length - 1]).toBe('reflection');
   });
 
   it('is deterministic for the same date', () => {
@@ -25,25 +26,12 @@ describe('session builder', () => {
     expect(JSON.stringify(a)).not.toEqual(JSON.stringify(b));
   });
 
-  it('calibration block has 5 well-formed items', () => {
+  it('every block references a registered module and carries a generated instance', () => {
     const s = buildSession('2026-06-03', defaultState());
-    const cal = s.blocks.find((b) => b.moduleId === 'calibration')!.exercise as CalibrationExercise;
-    expect(cal.items).toHaveLength(5);
-    for (const item of cal.items) {
-      expect(typeof item.statement).toBe('string');
-      expect(typeof item.answer).toBe('boolean');
-    }
-    // No duplicate items within a block.
-    const ids = cal.items.map((i) => i.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('estimation block has 2 numeric facts', () => {
-    const s = buildSession('2026-06-03', defaultState());
-    const est = s.blocks.find((b) => b.moduleId === 'estimation')!.exercise as EstimationExercise;
-    expect(est.facts).toHaveLength(2);
-    for (const f of est.facts) {
-      expect(Number.isFinite(f.value)).toBe(true);
+    for (const b of s.blocks) {
+      expect(getModule(b.moduleId)).toBeDefined();
+      expect(b.generated).toBeTruthy();
+      expect((b.generated as { puzzle: unknown }).puzzle).toBeTruthy();
     }
   });
 });

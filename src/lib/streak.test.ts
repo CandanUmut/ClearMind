@@ -3,7 +3,7 @@ import { completeDailySession, isCompletedToday, liveStreak } from './streak';
 import { defaultState } from './storage';
 import type { SessionSummary } from '../types';
 
-const summary = (dateKey: string): SessionSummary => ({ dateKey });
+const summary = (dateKey: string): SessionSummary => ({ dateKey, blocks: [] });
 
 describe('streak transitions', () => {
   it('first completion sets streak to 1', () => {

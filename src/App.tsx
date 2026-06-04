@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState, type ReactElement } from 'react';
 import type { DailySession, SessionSummary } from './types';
 import { useUserState } from './hooks/useUserState';
 import { dailyKey } from './lib/seed';
@@ -8,6 +8,7 @@ import { Home } from './components/Home';
 import { Onboarding } from './components/Onboarding';
 import { SessionRunner } from './components/SessionRunner';
 import { Results } from './components/Results';
+import { SeedInspector } from './components/SeedInspector';
 
 // Code-split the heavier, less-frequently-visited screens.
 const Stats = lazy(() => import('./components/Stats').then((m) => ({ default: m.Stats })));
@@ -21,8 +22,17 @@ export default function App() {
   const [session, setSession] = useState<DailySession | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [practice, setPractice] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   const todayKey = useMemo(() => dailyKey(), []);
+  const debugEnabled = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      new URLSearchParams(window.location.search).has('debug') ||
+      window.localStorage.getItem('clearmind:debug') === '1'
+    );
+  }, []);
+  const reducedMotion = state.settings.reducedMotion;
 
   if (!state.settings.onboarded) {
     return (
@@ -40,7 +50,7 @@ export default function App() {
 
   function startPractice() {
     setPractice(true);
-    setSession(buildPracticeSession(state));
+    setSession(buildPracticeSession(state, `${Date.now()}:${Math.floor(Math.random() * 1e9)}`));
     setView('session');
   }
 
@@ -72,22 +82,25 @@ export default function App() {
 
   const loading = <div className="flex min-h-dvh items-center justify-center text-muted">…</div>;
 
+  let screen: ReactElement;
   switch (view) {
     case 'session':
-      return session ? (
+      screen = session ? (
         <SessionRunner
           session={session}
           update={update}
           practice={practice}
+          reducedMotion={reducedMotion}
           onComplete={handleComplete}
           onExit={() => setView('home')}
         />
       ) : (
         loading
       );
+      break;
 
     case 'results':
-      return summary ? (
+      screen = summary ? (
         <Results
           summary={summary}
           streak={state.streak}
@@ -98,23 +111,26 @@ export default function App() {
       ) : (
         loading
       );
+      break;
 
     case 'stats':
-      return (
+      screen = (
         <Suspense fallback={loading}>
           <Stats user={state} onHome={() => setView('home')} />
         </Suspense>
       );
+      break;
 
     case 'about':
-      return (
+      screen = (
         <Suspense fallback={loading}>
           <About onBack={() => setView('home')} />
         </Suspense>
       );
+      break;
 
     default:
-      return (
+      screen = (
         <Home
           user={state}
           onStart={startDaily}
@@ -126,4 +142,22 @@ export default function App() {
         />
       );
   }
+
+  return (
+    <>
+      {screen}
+      {debugEnabled && (
+        <button
+          onClick={() => setDebugOpen(true)}
+          className="fixed bottom-3 right-3 z-40 rounded-full bg-ink/80 px-3 py-2 text-small text-bg shadow-2"
+          aria-label="Open Seed Inspector"
+        >
+          🔬 seed
+        </button>
+      )}
+      {debugEnabled && debugOpen && (
+        <SeedInspector session={session} dateKey={todayKey} onClose={() => setDebugOpen(false)} />
+      )}
+    </>
+  );
 }
