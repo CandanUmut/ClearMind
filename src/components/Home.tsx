@@ -12,6 +12,7 @@ interface Props {
   user: UserState;
   onStart: () => void;
   onPractice: () => void;
+  onExplore: () => void;
   onStats: () => void;
   onAbout: () => void;
   onToggleTheme: () => void;
@@ -34,7 +35,7 @@ function timeUntilTomorrow(): string {
   return `${h}h ${m}m`;
 }
 
-export function Home({ user, onStart, onPractice, onStats, onAbout, onToggleTheme, onEveningCheck }: Props) {
+export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, onToggleTheme, onEveningCheck }: Props) {
   const today = new Date();
   const todayKey = dailyKey(today);
   const done = isCompletedToday(user, todayKey);
@@ -94,9 +95,10 @@ export function Home({ user, onStart, onPractice, onStats, onAbout, onToggleThem
               </div>
             </Card>
 
-            <div className="cm-rise" style={{ animationDelay: '120ms' }}>
+            <div className="cm-rise flex flex-col gap-3" style={{ animationDelay: '120ms' }}>
               <Button full onClick={onStart}>Start today’s 5 minutes</Button>
-              <p className="mt-3 text-center text-small text-muted">
+              <Button variant="ghost" full onClick={onExplore}>Explore all exercises</Button>
+              <p className="text-center text-small text-muted">
                 Clear thinking and good judgment — instead of scrolling.
               </p>
             </div>
@@ -132,6 +134,7 @@ export function Home({ user, onStart, onPractice, onStats, onAbout, onToggleThem
 
             <div className="cm-rise flex flex-col gap-3" style={{ animationDelay: '120ms' }}>
               <Button variant="secondary" full onClick={onStats}>See your progress</Button>
+              <Button variant="secondary" full onClick={onExplore}>Explore all exercises</Button>
               <Button variant="ghost" full onClick={onPractice}>Practice mode (unscored)</Button>
             </div>
           </>

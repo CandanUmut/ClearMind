@@ -13,8 +13,12 @@ import { SeedInspector } from './components/SeedInspector';
 // Code-split the heavier, less-frequently-visited screens.
 const Stats = lazy(() => import('./components/Stats').then((m) => ({ default: m.Stats })));
 const About = lazy(() => import('./components/About').then((m) => ({ default: m.About })));
+const Explore = lazy(() => import('./components/Explore').then((m) => ({ default: m.Explore })));
+const EndlessPractice = lazy(() =>
+  import('./components/EndlessPractice').then((m) => ({ default: m.EndlessPractice })),
+);
 
-type View = 'home' | 'session' | 'results' | 'stats' | 'about';
+type View = 'home' | 'session' | 'results' | 'stats' | 'about' | 'explore' | 'practiceModule';
 
 export default function App() {
   const { state, update } = useUserState();
@@ -22,6 +26,7 @@ export default function App() {
   const [session, setSession] = useState<DailySession | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [practice, setPractice] = useState(false);
+  const [practiceModuleId, setPracticeModuleId] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(false);
 
   const todayKey = useMemo(() => dailyKey(), []);
@@ -129,12 +134,43 @@ export default function App() {
       );
       break;
 
+    case 'explore':
+      screen = (
+        <Suspense fallback={loading}>
+          <Explore
+            user={state}
+            onBack={() => setView('home')}
+            onPractice={(id) => {
+              setPracticeModuleId(id);
+              setView('practiceModule');
+            }}
+          />
+        </Suspense>
+      );
+      break;
+
+    case 'practiceModule':
+      screen = practiceModuleId ? (
+        <Suspense fallback={loading}>
+          <EndlessPractice
+            moduleId={practiceModuleId}
+            startDifficulty={0.5}
+            reducedMotion={reducedMotion}
+            onExit={() => setView('explore')}
+          />
+        </Suspense>
+      ) : (
+        loading
+      );
+      break;
+
     default:
       screen = (
         <Home
           user={state}
           onStart={startDaily}
           onPractice={startPractice}
+          onExplore={() => setView('explore')}
           onStats={() => setView('stats')}
           onAbout={() => setView('about')}
           onToggleTheme={toggleTheme}
