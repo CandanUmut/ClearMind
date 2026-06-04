@@ -1,33 +1,21 @@
 import type { SessionSummary } from '../types';
 
 /**
- * Build a Wordle-style, link-free shareable result for the day.
- * Uses emoji to encode calibration accuracy and estimation hits, plus the streak.
+ * Build a Wordle-style, link-free shareable result for the day. Driven by the
+ * generic per-block summaries each module contributes, so new modules appear in
+ * the share string automatically.
  */
 export function buildShareText(summary: SessionSummary, streak: number): string {
   const lines: string[] = [];
   lines.push(`ClearMind ${summary.dateKey}`);
 
-  if (summary.calibrationTotal && summary.calibrationTotal > 0) {
-    const correct = summary.calibrationCorrect ?? 0;
-    const total = summary.calibrationTotal;
-    const squares = Array.from({ length: total }, (_, i) =>
-      i < correct ? '🟩' : '⬜',
-    ).join('');
-    lines.push(`Judgment ${squares} ${correct}/${total}`);
+  for (const b of summary.blocks) {
+    if (!b.glyphs) continue;
+    lines.push(`${b.title} ${b.glyphs}${b.label ? ` ${b.label}` : ''}`.trim());
   }
 
   if (typeof summary.brier === 'number') {
-    lines.push(`Brier ${summary.brier.toFixed(2)}`);
-  }
-
-  if (summary.estimationTotal && summary.estimationTotal > 0) {
-    const hits = summary.estimationHits ?? 0;
-    const total = summary.estimationTotal;
-    const squares = Array.from({ length: total }, (_, i) =>
-      i < hits ? '🎯' : '⬜',
-    ).join('');
-    lines.push(`Estimates ${squares} ${hits}/${total}`);
+    lines.push(`Brier ${summary.brier.toFixed(2)} (lower is better)`);
   }
 
   lines.push(`🔥 ${streak}-day streak`);

@@ -37,15 +37,26 @@ npm run test     # vitest (rng determinism, Brier, streaks, generators, session)
 ## Architecture
 
 - `src/lib/` — seeded PRNG (`rng`), daily seed (`seed`), typed storage, adaptive
-  rating, Brier/streak scoring, share text.
-- `src/engine/` — `session.ts` assembles the daily blocks; `modules/` holds each
-  exercise generator + scorer behind a single `ExerciseModule` contract.
-- `src/content/` — curated, verifiable seed banks (calibration facts, estimation
-  facts, reflection prompts) plus the honest evidence notes.
+  rating, Brier/streak scoring, mastery tiers, share text.
+- `src/engine/` — a **module registry** (`registry.ts`): every exercise is a pure
+  `generate(rng, difficulty)` + a `verify`, self-registering into the registry.
+  `session.ts` assembles the daily blocks (with a weekly category rotation) and
+  the runner/Explore/Stats all consume the registry — **adding a module touches
+  no core code**. `puzzles/` holds solvers (e.g. the nonogram line-solver used to
+  guarantee unique solutions). See [`docs/ENGINE.md`](docs/ENGINE.md).
+- `src/content/` — curated, verifiable banks (calibration/estimation facts,
+  reflection prompts) used as one *supplementary* source; computable generators
+  make calibration and estimation infinite and self-verifying.
 - `src/components/` — presentational UI; logic lives in `lib/` and `engine/`.
 
-The daily set is identical for everyone on a date; **difficulty** adapts per user
-from a per-skill rating, keeping you near your edge.
+**Modules:** mental math, n-back (warmup); calibration, estimation, intention,
+reflection (judgment); pattern matrix, odd-one-out, grid recall (visual); number
+sequence, nonogram (logic); word problems (problem). The daily set is identical
+for everyone on a date; **difficulty** adapts per user from a per-skill rating.
+
+**Seed Inspector:** append `?debug` to the URL (or tap the version label on the
+About page 5×) to open an overlay exposing today's seeds and a sandbox that
+regenerates any module from any seed + difficulty — determinism made visible.
 
 ## Deployment
 

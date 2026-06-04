@@ -1,5 +1,3 @@
-import type { ModuleId } from '../types';
-
 /** Local-timezone date key, "YYYY-MM-DD". */
 export function dailyKey(date: Date = new Date()): string {
   const y = date.getFullYear();
@@ -14,7 +12,7 @@ export function sessionSeed(dateKey: string): string {
 }
 
 /** Per-block seed so modules are independent but reproducible. */
-export function blockSeed(dateKey: string, moduleId: ModuleId): string {
+export function blockSeed(dateKey: string, moduleId: string): string {
   return `clearmind:${dateKey}:${moduleId}`;
 }
 

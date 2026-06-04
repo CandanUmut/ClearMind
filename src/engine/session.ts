@@ -1,19 +1,45 @@
 import type { DailySession, SessionBlock, UserState } from '../types';
 import { blockSeed, daysBetween, sessionSeed } from '../lib/seed';
 import { makeRng } from '../lib/rng';
-import { mentalMath } from './modules/mentalMath';
-import { nback } from './modules/nback';
-import { calibration } from './modules/calibration';
-import { estimation } from './modules/estimation';
-import { intention } from './modules/intention';
-import { makeReflection } from './modules/reflection';
+import { getModule, generateValid, modulesByCategory } from './registry';
+import './modules'; // ensure all modules are registered
 
 const EPOCH = '2024-01-01';
 
-/** Warmup alternates Mental Math (even days) / N-back (odd days). */
-function warmupForDay(dateKey: string): typeof mentalMath | typeof nback {
-  const offset = Math.abs(daysBetween(EPOCH, dateKey));
-  return offset % 2 === 0 ? mentalMath : nback;
+// ── Weekly rotation ──────────────────────────────────────────────────────────
+// Every day: 1 warmup + 1 judgment (calibration/estimation) + 1 rotating
+// {visual | logic | problem} + intention + reflection. The rotating slot and
+// the "focus skill of the week" advance weekly so days feel different while the
+// session stays ~5 minutes. New modules in these categories are picked up
+// automatically from the registry — no edits here required.
+
+const WARMUPS = ['mentalMath', 'nback'];
+const JUDGMENT = ['calibration', 'estimation'];
+const ROTATING_CATEGORIES = ['visual', 'logic', 'problem'] as const;
+
+function dayOffset(dateKey: string): number {
+  return Math.abs(daysBetween(EPOCH, dateKey));
+}
+function weekOffset(dateKey: string): number {
+  return Math.floor(dayOffset(dateKey) / 7);
+}
+
+/** Pick a registered module id from a category, rotating weekly; null if none. */
+function pickFromCategory(category: 'visual' | 'logic' | 'problem', dateKey: string): string | null {
+  const ids = modulesByCategory(category)
+    .map((m) => m.id)
+    .sort(); // stable order for determinism across reloads
+  if (ids.length === 0) return null;
+  return ids[weekOffset(dateKey) % ids.length];
+}
+
+function buildBlock(moduleId: string, dateKey: string, user: UserState): SessionBlock | null {
+  const m = getModule(moduleId);
+  if (!m) return null;
+  const difficulty = m.skillId ? user.ratings[m.skillId] ?? 0.4 : 0.5;
+  const rng = makeRng(blockSeed(dateKey, moduleId));
+  const generated = generateValid(m, rng, difficulty);
+  return { moduleId, title: m.title, difficulty, generated };
 }
 
 /**
@@ -21,97 +47,59 @@ function warmupForDay(dateKey: string): typeof mentalMath | typeof nback {
  * a date; difficulty is pulled from the user's per-skill rating so it adapts.
  */
 export function buildSession(dateKey: string, user: UserState): DailySession {
+  const offset = dayOffset(dateKey);
+  const warmupId = WARMUPS[offset % WARMUPS.length];
+  const judgmentId = JUDGMENT[offset % JUDGMENT.length];
+
+  // Rotating slot: choose a category by day, then a module within it by week.
+  const rotatingCategory = ROTATING_CATEGORIES[offset % ROTATING_CATEGORIES.length];
+  const rotatingId = pickFromCategory(rotatingCategory, dateKey);
+
+  const order = [warmupId, judgmentId, rotatingId, 'intention', 'reflection'].filter(
+    (x): x is string => Boolean(x),
+  );
+
   const blocks: SessionBlock[] = [];
+  for (const id of order) {
+    const b = buildBlock(id, dateKey, user);
+    if (b) blocks.push(b);
+  }
 
-  // 1. Warmup (math or n-back)
-  const warmup = warmupForDay(dateKey);
-  const warmupDifficulty = user.ratings[warmup.id as 'mentalMath' | 'nback'];
-  blocks.push({
-    moduleId: warmup.id,
-    title: warmup.title,
-    tier: warmup.tier,
-    estimateSeconds: warmup.estimateSeconds,
-    exercise: warmup.generate(makeRng(blockSeed(dateKey, warmup.id)), warmupDifficulty),
-  });
-
-  // 2. Calibration (flagship)
-  blocks.push({
-    moduleId: calibration.id,
-    title: calibration.title,
-    tier: calibration.tier,
-    estimateSeconds: calibration.estimateSeconds,
-    exercise: calibration.generate(
-      makeRng(blockSeed(dateKey, calibration.id)),
-      user.ratings.calibration,
-    ),
-  });
-
-  // 3. Estimation
-  blocks.push({
-    moduleId: estimation.id,
-    title: estimation.title,
-    tier: estimation.tier,
-    estimateSeconds: estimation.estimateSeconds,
-    exercise: estimation.generate(
-      makeRng(blockSeed(dateKey, estimation.id)),
-      user.ratings.estimation,
-    ),
-  });
-
-  // 4. Intention
-  blocks.push({
-    moduleId: intention.id,
-    title: intention.title,
-    tier: intention.tier,
-    estimateSeconds: intention.estimateSeconds,
-    exercise: intention.generate(makeRng(blockSeed(dateKey, intention.id)), 0.5),
-  });
-
-  // 5. Reflection (respects 30-day no-repeat window via user.recentReflectionIds)
-  blocks.push({
-    moduleId: 'reflection',
-    title: 'Reflection',
-    tier: 'core',
-    estimateSeconds: 45,
-    exercise: makeReflection(
-      makeRng(blockSeed(dateKey, 'reflection')),
-      user.recentReflectionIds,
-    ),
-  });
-
-  return {
-    dateKey,
-    seed: sessionSeed(dateKey),
-    blocks,
-  };
+  return { dateKey, seed: sessionSeed(dateKey), blocks };
 }
 
-/** Build a practice (unscored, off-seed) session using the current clock as entropy. */
-export function buildPracticeSession(user: UserState): DailySession {
-  const entropy = `practice:${Date.now()}:${Math.random()}`;
-  const warmup = mentalMath;
-  const blocks: SessionBlock[] = [
-    {
-      moduleId: warmup.id,
-      title: warmup.title,
-      tier: warmup.tier,
-      estimateSeconds: warmup.estimateSeconds,
-      exercise: warmup.generate(makeRng(`${entropy}:math`), user.ratings.mentalMath),
-    },
-    {
-      moduleId: calibration.id,
-      title: calibration.title,
-      tier: calibration.tier,
-      estimateSeconds: calibration.estimateSeconds,
-      exercise: calibration.generate(makeRng(`${entropy}:cal`), user.ratings.calibration),
-    },
-    {
-      moduleId: estimation.id,
-      title: estimation.title,
-      tier: estimation.tier,
-      estimateSeconds: estimation.estimateSeconds,
-      exercise: estimation.generate(makeRng(`${entropy}:est`), user.ratings.estimation),
-    },
-  ];
+/** Which skill is highlighted this week (the rotating module's skill). */
+export function focusSkillOfWeek(dateKey: string): string | null {
+  const offset = dayOffset(dateKey);
+  const rotatingCategory = ROTATING_CATEGORIES[offset % ROTATING_CATEGORIES.length];
+  const id = pickFromCategory(rotatingCategory, dateKey);
+  return id ? getModule(id)?.skillId ?? id : null;
+}
+
+/** Build an unscored practice session for a single module at a chosen difficulty. */
+export function buildPracticeBlock(
+  moduleId: string,
+  difficulty: number,
+  entropy: string,
+): SessionBlock | null {
+  const m = getModule(moduleId);
+  if (!m) return null;
+  const rng = makeRng(`practice:${moduleId}:${entropy}`);
+  const generated = generateValid(m, rng, difficulty);
+  return { moduleId, title: m.title, difficulty, generated };
+}
+
+/** Build a short, off-seed, unscored practice session (Home "Practice mode").
+ *  Entropy is supplied by the caller so the engine stays free of side effects. */
+export function buildPracticeSession(user: UserState, entropy: string): DailySession {
+  const ids = ['mentalMath', 'calibration', 'estimation'];
+  const blocks: SessionBlock[] = [];
+  for (const id of ids) {
+    const m = getModule(id);
+    if (!m) continue;
+    const difficulty = m.skillId ? user.ratings[m.skillId] ?? 0.4 : 0.5;
+    const generated = generateValid(m, makeRng(`practice:${id}:${entropy}`), difficulty);
+    blocks.push({ moduleId: id, title: m.title, difficulty, generated });
+  }
   return { dateKey: 'practice', seed: entropy, blocks };
 }

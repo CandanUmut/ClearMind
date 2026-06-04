@@ -125,12 +125,17 @@ export interface ReflectionAnswer {
 // ── Session model ──────────────────────────────────────────────────────────
 
 export interface SessionBlock {
-  moduleId: ModuleId;
+  /** Registry module id (stable). */
+  moduleId: string;
   title: string;
-  tier: 'core' | 'skill' | 'warmup';
-  estimateSeconds: number;
-  /** The generated exercise payload (shape depends on moduleId). */
-  exercise: unknown;
+  /** Difficulty (0..1) the instance was generated at — pulled from user rating. */
+  difficulty: number;
+  /**
+   * The generated instance: { puzzle, solution, options? }. Stored as unknown
+   * here to keep the session model module-agnostic; the runner casts via the
+   * registry module's own types.
+   */
+  generated: unknown;
 }
 
 export interface DailySession {
@@ -171,8 +176,22 @@ export interface SavedReflection {
   text: string;
 }
 
+/** A module-agnostic per-block summary line, contributed by each module. */
+export interface BlockSummary {
+  moduleId: string;
+  title: string;
+  category: string;
+  /** Short emoji glyph(s) for the share string, e.g. "🟩🟩⬜". */
+  glyphs?: string;
+  /** Human label, e.g. "4/5" or "in range". */
+  label?: string;
+  correct?: boolean;
+}
+
 export interface SessionSummary {
   dateKey: string;
+  blocks: BlockSummary[];
+  // Legacy convenience fields (still populated by the relevant modules).
   mathCorrect?: number;
   mathTotal?: number;
   nbackCorrect?: number;
@@ -197,8 +216,8 @@ export interface UserState {
   lastCompletedDate: string | null;
   followThroughStreak: number;
   sessionsCompleted: number;
-  ratings: Record<SkillId, number>; // 0..1 per skill
-  ratingHistory: Partial<Record<SkillId, number[]>>;
+  ratings: Record<string, number>; // 0..1 per skill (keyed by module skillId)
+  ratingHistory: Record<string, number[]>;
   brierHistory: BrierRecord[];
   estimationHistory: EstimationRecord[];
   intentions: SavedIntention[];

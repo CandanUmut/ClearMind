@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import type { SkillId, UserState } from '../types';
+import type { UserState } from '../types';
 import { dailyKey } from '../lib/seed';
 import { liveStreak } from '../lib/streak';
 import { mean, pct } from '../lib/scoring';
+import { allModules } from '../engine/registry';
+import '../engine/modules';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { ReliabilityDiagram } from './ui/ReliabilityDiagram';
@@ -14,12 +16,11 @@ interface Props {
   onHome: () => void;
 }
 
-const SKILL_LABELS: Record<SkillId, string> = {
-  mentalMath: 'Mental Math',
-  nback: 'N-Back',
-  calibration: 'Calibration',
-  estimation: 'Estimation',
-};
+// Skill rows are derived from the registry: every scored module (skillId set)
+// appears automatically, so new modules need no edits here.
+const SKILLS = allModules()
+  .filter((m) => m.skillId)
+  .map((m) => ({ skillId: m.skillId as string, title: m.title }));
 
 function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -128,15 +129,15 @@ export function Stats({ user, onHome }: Props) {
             Difficulty adapts to keep you near your edge — this is your current setting, not a score.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            {(Object.keys(SKILL_LABELS) as SkillId[]).map((id) => (
-              <div key={id} className="flex items-center justify-between gap-3">
+            {SKILLS.map(({ skillId, title }) => (
+              <div key={skillId} className="flex items-center justify-between gap-3">
                 <div className="flex-1">
-                  <p className="text-small text-ink">{SKILL_LABELS[id]}</p>
+                  <p className="text-small text-ink">{title}</p>
                   <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-                    <div className="h-full rounded-full bg-accent" style={{ width: `${Math.round(user.ratings[id] * 100)}%` }} />
+                    <div className="h-full rounded-full bg-accent" style={{ width: `${Math.round((user.ratings[skillId] ?? 0.4) * 100)}%` }} />
                   </div>
                 </div>
-                <Sparkline values={user.ratingHistory[id] ?? []} width={70} height={24} />
+                <Sparkline values={user.ratingHistory[skillId] ?? []} width={70} height={24} />
               </div>
             ))}
           </div>
