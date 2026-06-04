@@ -4,7 +4,7 @@ A **5-minute daily mental-exercise** web app — calibration, estimation, and a 
 intention, instead of scrolling. Built like Wordle: a deterministic daily seed
 derived from the date generates the same session for everyone, with no backend.
 
-**Live:** `https://<user>.github.io/clearmind/`
+**Live:** `https://<user>.github.io/ClearMind/`
 
 ## The honest premise
 
