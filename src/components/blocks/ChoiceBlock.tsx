@@ -1,6 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { EvidenceNote } from '../../engine/registry';
+import { sound } from '../../lib/sound';
 import { Button } from '../ui/Button';
 import { ModuleEvidence } from '../ui/ModuleEvidence';
 
@@ -22,6 +23,8 @@ interface Props<T> {
   reducedMotion: boolean;
   /** Columns in the option grid (default 3). */
   columns?: number;
+  /** CSS color (var) used to tint the category label. */
+  accent?: string;
 }
 
 const defaultEquals = <T,>(a: T, b: T) => JSON.stringify(a) === JSON.stringify(b);
@@ -45,15 +48,22 @@ export function ChoiceBlock<T>({
   evidence,
   reducedMotion,
   columns = 3,
+  accent = 'var(--accent)',
 }: Props<T>) {
   const [picked, setPicked] = useState<number | null>(null);
   const revealed = picked !== null;
   const pickedCorrect = revealed && equals(options[picked], solution);
 
+  function choose(i: number) {
+    if (revealed) return;
+    setPicked(i);
+    sound.feedback(equals(options[i], solution));
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <p className="text-small text-muted">{category}</p>
+        <p className="text-small font-medium" style={{ color: accent }}>{category}</p>
         <h2 className="text-h2 text-ink">{title}</h2>
       </header>
 
@@ -70,18 +80,27 @@ export function ChoiceBlock<T>({
           const isCorrect = equals(opt, solution);
           const isPicked = picked === i;
           let ring = 'border-line';
-          if (revealed && isCorrect) ring = 'border-correct';
-          else if (revealed && isPicked && !isCorrect) ring = 'border-incorrect';
+          let anim = '';
+          if (revealed && isCorrect) { ring = 'border-correct'; anim = reducedMotion ? '' : 'cm-pop'; }
+          else if (revealed && isPicked && !isCorrect) { ring = 'border-incorrect'; anim = reducedMotion ? '' : 'cm-shake'; }
           return (
             <motion.button
               key={i}
               type="button"
               whileTap={reducedMotion ? undefined : { scale: 0.97 }}
               disabled={revealed}
-              onClick={() => setPicked(i)}
+              onClick={() => choose(i)}
               aria-label={optionLabel ? optionLabel(opt, i) : `Option ${i + 1}`}
               aria-pressed={isPicked}
-              className={`relative flex min-h-[64px] items-center justify-center rounded-sm border-2 ${ring} bg-surface p-3 transition-colors disabled:opacity-100`}
+              className={`relative flex min-h-[64px] items-center justify-center rounded-sm border-2 ${ring} ${anim} p-3 transition-colors disabled:opacity-100`}
+              style={{
+                background:
+                  revealed && isCorrect
+                    ? 'color-mix(in srgb, var(--correct) 12%, var(--surface))'
+                    : revealed && isPicked && !isCorrect
+                      ? 'color-mix(in srgb, var(--incorrect) 12%, var(--surface))'
+                      : 'var(--surface)',
+              }}
             >
               {renderOption(opt, i)}
               {revealed && isCorrect && (

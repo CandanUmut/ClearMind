@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { SessionSummary } from '../types';
 import { buildShareText, copyToClipboard } from '../lib/share';
+import { categoryColor } from '../lib/categories';
+import { sound } from '../lib/sound';
+import type { ModuleCategory } from '../engine/registry';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 
@@ -13,9 +16,15 @@ interface Props {
   onStats: () => void;
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <div className="flex flex-col items-center rounded-sm border border-line bg-surface-2/50 px-3 py-4 text-center">
+    <div
+      className="flex flex-col items-center rounded-sm border px-3 py-4 text-center"
+      style={{
+        borderColor: color ? `color-mix(in srgb, ${color} 35%, var(--line))` : 'var(--line)',
+        background: color ? `color-mix(in srgb, ${color} 7%, var(--surface))` : 'var(--surface-2)',
+      }}
+    >
       <span className="tnum text-h2 text-ink">{value}</span>
       <span className="mt-1 text-small text-muted">{label}</span>
       {sub && <span className="text-small text-muted">{sub}</span>}
@@ -25,6 +34,13 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 export function Results({ summary, streak, practice, onHome, onStats }: Props) {
   const [copied, setCopied] = useState(false);
+
+  // A warm completion chime; voice announces the streak only if voice is on.
+  useEffect(() => {
+    sound.complete();
+    if (!practice) sound.say(`Done. ${streak} day streak.`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!copied) return;
@@ -37,13 +53,12 @@ export function Results({ summary, streak, practice, onHome, onStats }: Props) {
     setCopied(ok);
   }
 
-  const warmupCorrect = summary.mathCorrect ?? summary.nbackCorrect;
-  const warmupTotal = summary.mathTotal ?? summary.nbackTotal;
+  const scored = summary.blocks.filter((b) => b.label && b.label !== 'set' && b.label !== 'skipped' && b.label !== 'written' && b.label !== 'reflected');
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-column flex-col px-5 py-8">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6">
-        <header className="text-center">
+        <header className="cm-hero rounded border border-line p-6 text-center shadow-1">
           <p className="text-small text-muted">{practice ? 'Practice complete' : 'Session complete'}</p>
           <h1 className="mt-1 text-h1 text-ink">Nicely done.</h1>
           {!practice && (
@@ -54,17 +69,16 @@ export function Results({ summary, streak, practice, onHome, onStats }: Props) {
         </header>
 
         <div className="grid grid-cols-2 gap-3">
-          {typeof warmupCorrect === 'number' && (
-            <Stat label="Warmup" value={`${warmupCorrect}/${warmupTotal}`} />
-          )}
-          {typeof summary.calibrationCorrect === 'number' && (
-            <Stat label="Judgment" value={`${summary.calibrationCorrect}/${summary.calibrationTotal}`} />
-          )}
+          {scored.map((b, i) => (
+            <Stat
+              key={i}
+              label={`${b.glyphs ?? ''} ${b.title}`.trim()}
+              value={b.label ?? ''}
+              color={categoryColor(b.category as ModuleCategory)}
+            />
+          ))}
           {typeof summary.brier === 'number' && (
-            <Stat label="Brier score" value={summary.brier.toFixed(2)} sub="lower is better" />
-          )}
-          {typeof summary.estimationHits === 'number' && (
-            <Stat label="Estimates in range" value={`${summary.estimationHits}/${summary.estimationTotal}`} />
+            <Stat label="Brier score" value={summary.brier.toFixed(2)} sub="lower is better" color={categoryColor('judgment')} />
           )}
         </div>
 

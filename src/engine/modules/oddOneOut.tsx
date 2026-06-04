@@ -3,6 +3,7 @@ import { int, pick, shuffle } from '../../lib/rng';
 import { register, type ExerciseModule, type GeneratedExercise } from '../registry';
 import { CellGlyph, describeCell, SHAPE_KINDS, type CellSpec } from '../../components/svg/Cell';
 import { ChoiceBlock } from '../../components/blocks/ChoiceBlock';
+import { categoryColor } from '../../lib/categories';
 
 // ── Difficulty mapping ───────────────────────────────────────────────────────
 //   count of figures: 4 (<0.5) → 6 ; the odd one violates ONE shared feature.
@@ -99,6 +100,7 @@ export const oddOneOut: ExerciseModule<OddPuzzle, number, number> = {
         reducedMotion={reducedMotion}
         evidence={oddOneOut.evidence}
         columns={figs.length > 4 ? 3 : 2}
+        accent={categoryColor('visual')}
       />
     );
   },

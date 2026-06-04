@@ -2,6 +2,7 @@ import type { UserState } from '../types';
 import { allModules, type ModuleCategory } from '../engine/registry';
 import '../engine/modules';
 import { masteryTier, tierProgress } from '../lib/mastery';
+import { CATEGORY_META, categoryColor } from '../lib/categories';
 import { Card } from './ui/Card';
 import { Ring } from './ui/Ring';
 
@@ -38,26 +39,39 @@ export function Explore({ user, onBack, onPractice }: Props) {
         {CATEGORY_ORDER.map((cat) => {
           const inCat = modules.filter((m) => m.category === cat);
           if (inCat.length === 0) return null;
+          const color = categoryColor(cat);
           return (
             <section key={cat}>
-              <h2 className="mb-3 text-h3 text-ink">{CATEGORY_LABELS[cat]}</h2>
+              <h2 className="mb-3 flex items-center gap-2 text-h3" style={{ color }}>
+                <span aria-hidden>{CATEGORY_META[cat].emoji}</span>
+                {CATEGORY_LABELS[cat]}
+              </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {inCat.map((m) => {
                   const rating = m.skillId ? user.ratings[m.skillId] ?? 0.4 : null;
                   return (
                     <Card key={m.id} interactive className="flex items-center gap-4">
                       {rating !== null ? (
-                        <Ring value={tierProgress(rating)} size={52} stroke={5}>
+                        <Ring value={tierProgress(rating)} size={52} stroke={5} color={color}>
                           <span className="text-[10px] text-muted">{Math.round(rating * 100)}</span>
                         </Ring>
                       ) : (
-                        <div className="grid h-[52px] w-[52px] place-items-center text-h3" aria-hidden>✎</div>
+                        <div
+                          className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full text-h3"
+                          style={{ background: `color-mix(in srgb, ${color} 14%, transparent)`, color }}
+                          aria-hidden
+                        >
+                          ✎
+                        </div>
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <h3 className="truncate text-body font-semibold text-ink">{m.title}</h3>
                           {rating !== null && (
-                            <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-small text-muted">
+                            <span
+                              className="shrink-0 rounded-full px-2 py-0.5 text-small"
+                              style={{ background: `color-mix(in srgb, ${color} 14%, transparent)`, color }}
+                            >
                               {masteryTier(rating)}
                             </span>
                           )}
@@ -65,7 +79,8 @@ export function Explore({ user, onBack, onPractice }: Props) {
                         <p className="text-small text-muted">{m.blurb}</p>
                         <button
                           onClick={() => onPractice(m.id)}
-                          className="mt-2 text-small font-medium text-accent hover:underline"
+                          className="mt-2 text-small font-semibold hover:underline"
+                          style={{ color }}
                         >
                           Practice →
                         </button>

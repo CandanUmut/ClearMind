@@ -5,7 +5,7 @@
 // The base is derived from the worker's own location so it works at any path
 // (e.g. /ClearMind/) without hardcoding the repo name or casing.
 
-const CACHE = 'clearmind-v3';
+const CACHE = 'clearmind-v4';
 const BASE = new URL('./', self.location).pathname; // e.g. "/ClearMind/"
 const SHELL = [BASE, BASE + 'index.html', BASE + 'manifest.webmanifest'];
 

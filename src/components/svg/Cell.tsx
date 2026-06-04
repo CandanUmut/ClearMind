@@ -59,7 +59,13 @@ export function CellGlyph({ spec, px = 80 }: { spec: CellSpec; px?: number }) {
   });
 
   return (
-    <svg width={px} height={px} viewBox={`0 0 ${px} ${px}`} aria-hidden>
+    <svg
+      width={px}
+      height={px}
+      viewBox={`0 0 ${px} ${px}`}
+      style={{ maxWidth: '100%', height: 'auto' }}
+      aria-hidden
+    >
       <defs>
         <pattern id={hatchId} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="5" stroke="var(--ink)" strokeWidth="1.5" />

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { BlockResult, RNG } from '../../types';
 import { sample } from '../../lib/rng';
 import { register, type BlockProps, type ExerciseModule, type GeneratedExercise } from '../registry';
+import { sound } from '../../lib/sound';
 import { Button } from '../../components/ui/Button';
 import { ModuleEvidence } from '../../components/ui/ModuleEvidence';
 
@@ -72,7 +73,7 @@ function GridRecallBlock({ puzzle, onAnswer, reducedMotion }: BlockProps<RecallP
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <p className="text-small text-muted">Visual memory</p>
+        <p className="text-small font-medium" style={{ color: 'var(--cat-visual)' }}>Visual memory</p>
         <h2 className="text-h2 text-ink">
           {phase === 'show' ? 'Memorise the lit cells' : `Tap the ${lit.length} cells`}
         </h2>
@@ -116,7 +117,15 @@ function GridRecallBlock({ puzzle, onAnswer, reducedMotion }: BlockProps<RecallP
           <p className="text-center text-small text-muted">Watch closely…</p>
         )
       ) : (
-        <Button full disabled={picked.size !== lit.length} onClick={() => onAnswer([...picked])}>
+        <Button
+          full
+          disabled={picked.size !== lit.length}
+          onClick={() => {
+            const ok = litSet.size === picked.size && [...picked].every((i) => litSet.has(i));
+            sound.feedback(ok, ok ? 'Correct' : 'Close');
+            onAnswer([...picked]);
+          }}
+        >
           {picked.size === lit.length ? 'Submit' : `Select ${lit.length - picked.size} more`}
         </Button>
       )}

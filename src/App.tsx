@@ -1,9 +1,10 @@
-import { lazy, Suspense, useMemo, useState, type ReactElement } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { DailySession, SessionSummary } from './types';
 import { useUserState } from './hooks/useUserState';
 import { dailyKey } from './lib/seed';
 import { buildPracticeSession, buildSession } from './engine/session';
 import { completeDailySession } from './lib/streak';
+import { sound } from './lib/sound';
 import { Home } from './components/Home';
 import { Onboarding } from './components/Onboarding';
 import { SessionRunner } from './components/SessionRunner';
@@ -42,6 +43,24 @@ export default function App() {
     (typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) ||
     false;
+
+  // Keep the audio engine in sync with the user's sound/voice preferences.
+  useEffect(() => {
+    sound.configure({ sound: state.settings.sound, voice: state.settings.voice });
+  }, [state.settings.sound, state.settings.voice]);
+
+  // Cycle: muted → chimes → chimes + voice → muted.
+  function cycleAudio() {
+    update((p) => {
+      const { sound: s, voice: v } = p.settings;
+      const next = !s ? { sound: true, voice: false } : !v ? { sound: true, voice: true } : { sound: false, voice: false };
+      // Confirm the new mode audibly/spoken.
+      sound.configure(next);
+      if (next.sound) sound.correct();
+      if (next.voice) sound.say('Voice on');
+      return { ...p, settings: { ...p.settings, ...next } };
+    });
+  }
 
   if (!state.settings.onboarded) {
     return (
@@ -178,6 +197,7 @@ export default function App() {
           onStats={() => setView('stats')}
           onAbout={() => setView('about')}
           onToggleTheme={toggleTheme}
+          onCycleAudio={cycleAudio}
           onEveningCheck={eveningCheck}
         />
       );

@@ -5,6 +5,7 @@ import { liveStreak } from '../lib/streak';
 import { mean, pct } from '../lib/scoring';
 import { allModules } from '../engine/registry';
 import '../engine/modules';
+import { categoryColor } from '../lib/categories';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { ReliabilityDiagram } from './ui/ReliabilityDiagram';
@@ -20,7 +21,7 @@ interface Props {
 // appears automatically, so new modules need no edits here.
 const SKILLS = allModules()
   .filter((m) => m.skillId)
-  .map((m) => ({ skillId: m.skillId as string, title: m.title }));
+  .map((m) => ({ skillId: m.skillId as string, title: m.title, color: categoryColor(m.category) }));
 
 function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -129,12 +130,12 @@ export function Stats({ user, onHome }: Props) {
             Difficulty adapts to keep you near your edge — this is your current setting, not a score.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            {SKILLS.map(({ skillId, title }) => (
+            {SKILLS.map(({ skillId, title, color }) => (
               <div key={skillId} className="flex items-center justify-between gap-3">
                 <div className="flex-1">
                   <p className="text-small text-ink">{title}</p>
                   <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-                    <div className="h-full rounded-full bg-accent" style={{ width: `${Math.round((user.ratings[skillId] ?? 0.4) * 100)}%` }} />
+                    <div className="h-full rounded-full" style={{ width: `${Math.round((user.ratings[skillId] ?? 0.4) * 100)}%`, background: color }} />
                   </div>
                 </div>
                 <Sparkline values={user.ratingHistory[skillId] ?? []} width={70} height={24} />
