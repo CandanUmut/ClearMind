@@ -18,6 +18,7 @@ interface Props {
   onExplore: () => void;
   onStats: () => void;
   onAbout: () => void;
+  onSettings: () => void;
   onToggleTheme: () => void;
   onCycleAudio: () => void;
   onEveningCheck: () => void;
@@ -39,7 +40,7 @@ function timeUntilTomorrow(): string {
   return `${h}h ${m}m`;
 }
 
-export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, onToggleTheme, onCycleAudio, onEveningCheck }: Props) {
+export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, onSettings, onToggleTheme, onCycleAudio, onEveningCheck }: Props) {
   const today = new Date();
   const todayKey = dailyKey(today);
   const done = isCompletedToday(user, todayKey);
@@ -102,6 +103,12 @@ export function Home({ user, onStart, onPractice, onExplore, onStats, onAbout, o
             </svg>
           </button>
           <ThemeToggle theme={user.settings.theme} onToggle={onToggleTheme} />
+          <button onClick={onSettings} aria-label="Settings" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-soft hover:bg-surface-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+            </svg>
+          </button>
         </div>
       </div>
 

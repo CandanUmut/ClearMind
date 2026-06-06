@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 
@@ -20,15 +20,13 @@ const variants: Record<Variant, string> = {
   ghost: 'bg-transparent text-ink-soft hover:text-ink hover:bg-surface-2',
 };
 
-export function Button({
-  variant = 'primary',
-  full = false,
-  className = '',
-  children,
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = 'primary', full = false, className = '', children, ...props },
+  ref,
+) {
   return (
     <motion.button
+      ref={ref}
       whileTap={{ scale: 0.97 }}
       transition={{ duration: 0.12 }}
       className={`${base} ${variants[variant]} ${full ? 'w-full' : ''} ${className}`}
@@ -37,4 +35,4 @@ export function Button({
       {children}
     </motion.button>
   );
-}
+});

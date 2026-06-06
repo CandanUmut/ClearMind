@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { EvidenceNote } from '../../engine/registry';
 import { sound } from '../../lib/sound';
@@ -25,6 +25,8 @@ interface Props<T> {
   columns?: number;
   /** CSS color (var) used to tint the category label. */
   accent?: string;
+  /** A short worked "why" shown after answering — turns the test into a lesson. */
+  explanation?: ReactNode;
 }
 
 const defaultEquals = <T,>(a: T, b: T) => JSON.stringify(a) === JSON.stringify(b);
@@ -32,7 +34,9 @@ const defaultEquals = <T,>(a: T, b: T) => JSON.stringify(a) === JSON.stringify(b
 /**
  * A reusable choice-based block: a puzzle prompt plus a grid of options. Shows
  * gentle correct/incorrect feedback (never color-only — uses ✓/✗ glyphs and a
- * border), reveals the correct option, then advances. Fully keyboard-navigable.
+ * border), an optional explanation, then advances. Fully keyboard-navigable
+ * (number keys 1–9 pick an option; Enter continues) with a live region for
+ * screen readers.
  */
 export function ChoiceBlock<T>({
   category,
@@ -49,16 +53,42 @@ export function ChoiceBlock<T>({
   reducedMotion,
   columns = 3,
   accent = 'var(--accent)',
+  explanation,
 }: Props<T>) {
   const [picked, setPicked] = useState<number | null>(null);
   const revealed = picked !== null;
   const pickedCorrect = revealed && equals(options[picked], solution);
+  const continueRef = useRef<HTMLButtonElement>(null);
 
   function choose(i: number) {
-    if (revealed) return;
+    if (picked !== null) return;
     setPicked(i);
     sound.feedback(equals(options[i], solution));
   }
+
+  // Keyboard: 1–9 select an option; Enter/Space continues once revealed.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!revealed) {
+        const n = Number(e.key);
+        if (n >= 1 && n <= options.length) {
+          e.preventDefault();
+          choose(n - 1);
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        onAnswer(options[picked]);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed, picked, options]);
+
+  // Move focus to Continue when the answer is revealed.
+  useEffect(() => {
+    if (revealed) continueRef.current?.focus();
+  }, [revealed]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -68,7 +98,7 @@ export function ChoiceBlock<T>({
       </header>
 
       <div role="group" aria-label={ariaDescription}>
-        <p className="sr-only">{ariaDescription}</p>
+        <p className="sr-only">{ariaDescription}. Press 1 to {options.length} to choose.</p>
         {prompt}
       </div>
 
@@ -90,7 +120,7 @@ export function ChoiceBlock<T>({
               whileTap={reducedMotion ? undefined : { scale: 0.97 }}
               disabled={revealed}
               onClick={() => choose(i)}
-              aria-label={optionLabel ? optionLabel(opt, i) : `Option ${i + 1}`}
+              aria-label={`${i + 1}. ${optionLabel ? optionLabel(opt, i) : `Option ${i + 1}`}`}
               aria-pressed={isPicked}
               className={`relative flex min-h-[64px] items-center justify-center rounded-sm border-2 ${ring} ${anim} p-3 transition-colors disabled:opacity-100`}
               style={{
@@ -102,6 +132,12 @@ export function ChoiceBlock<T>({
                       : 'var(--surface)',
               }}
             >
+              <span
+                className="tnum absolute left-1.5 top-1 text-small text-muted"
+                aria-hidden
+              >
+                {i + 1}
+              </span>
               {renderOption(opt, i)}
               {revealed && isCorrect && (
                 <span className="absolute right-1 top-1 text-correct" aria-hidden>✓</span>
@@ -114,28 +150,36 @@ export function ChoiceBlock<T>({
         })}
       </div>
 
-      {revealed && (
-        <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-3"
-        >
-          <p
-            className="rounded-sm px-4 py-3 text-center text-body font-semibold"
-            style={{
-              background: pickedCorrect
-                ? 'color-mix(in srgb, var(--correct) 14%, transparent)'
-                : 'color-mix(in srgb, var(--incorrect) 14%, transparent)',
-              color: pickedCorrect ? 'var(--correct)' : 'var(--incorrect)',
-            }}
+      <div aria-live="polite" className="contents">
+        {revealed && (
+          <motion.div
+            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-3"
           >
-            {pickedCorrect ? 'Correct' : 'Not this time — the highlighted one fits.'}
-          </p>
-          <Button full onClick={() => onAnswer(options[picked])}>
-            Continue
-          </Button>
-        </motion.div>
-      )}
+            <p
+              className="rounded-sm px-4 py-3 text-center text-body font-semibold"
+              style={{
+                background: pickedCorrect
+                  ? 'color-mix(in srgb, var(--correct) 14%, transparent)'
+                  : 'color-mix(in srgb, var(--incorrect) 14%, transparent)',
+                color: pickedCorrect ? 'var(--correct)' : 'var(--incorrect)',
+              }}
+            >
+              {pickedCorrect ? 'Correct' : 'Not this time — the highlighted one fits.'}
+            </p>
+            {explanation && (
+              <div className="rounded-sm border border-line bg-surface-2/60 px-4 py-3 text-small text-ink-soft">
+                <span className="font-semibold text-ink">Why: </span>
+                {explanation}
+              </div>
+            )}
+            <Button ref={continueRef} full onClick={() => onAnswer(options[picked])}>
+              Continue
+            </Button>
+          </motion.div>
+        )}
+      </div>
 
       <ModuleEvidence note={evidence} />
     </div>

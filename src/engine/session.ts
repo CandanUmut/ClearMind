@@ -36,7 +36,10 @@ function pickFromCategory(category: 'visual' | 'logic' | 'problem', dateKey: str
 function buildBlock(moduleId: string, dateKey: string, user: UserState): SessionBlock | null {
   const m = getModule(moduleId);
   if (!m) return null;
-  const difficulty = m.skillId ? user.ratings[m.skillId] ?? 0.4 : 0.5;
+  const base = m.skillId ? user.ratings[m.skillId] ?? 0.4 : 0.5;
+  // Challenge preference nudges generated difficulty up or down on top of rating.
+  const bias = user.settings.challenge === 'relaxed' ? -0.12 : user.settings.challenge === 'challenging' ? 0.12 : 0;
+  const difficulty = Math.max(0, Math.min(1, base + bias));
   const rng = makeRng(blockSeed(dateKey, moduleId));
   const generated = generateValid(m, rng, difficulty);
   return { moduleId, title: m.title, difficulty, generated };

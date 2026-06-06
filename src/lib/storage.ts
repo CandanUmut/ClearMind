@@ -29,12 +29,14 @@ export function defaultState(): UserState {
     reflections: [],
     recentReflectionIds: [],
     summaries: [],
+    achievements: [],
     settings: {
       theme: prefersDark ? 'dark' : 'light',
       reducedMotion: false,
       onboarded: false,
       sound: true,
       voice: false,
+      challenge: 'balanced',
     },
   };
 }
@@ -59,6 +61,7 @@ function migrate(raw: unknown): UserState {
     reflections: r.reflections ?? [],
     recentReflectionIds: r.recentReflectionIds ?? [],
     summaries: r.summaries ?? [],
+    achievements: r.achievements ?? [],
     settings: { ...base.settings, ...(r.settings ?? {}) },
   };
 }

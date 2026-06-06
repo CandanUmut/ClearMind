@@ -13,7 +13,16 @@ import { categoryColor } from '../../lib/categories';
 
 interface OddPuzzle {
   figures: CellSpec[];
+  dim: string; // the feature the odd one violates (for the explanation)
 }
+
+const DIM_LABEL: Record<string, string> = {
+  kind: 'shape',
+  count: 'number of shapes',
+  shade: 'fill',
+  rotation: 'rotation',
+  size: 'size',
+};
 
 const SIZES = [0.7, 1.0];
 const ROTATIONS = [0, 90, 180, 270];
@@ -55,7 +64,7 @@ export function generateOddOneOut(
   const oddIndex = order.indexOf(n - 1);
 
   // options are the figure indices; solution is the odd index.
-  return { puzzle: { figures: shuffled }, solution: oddIndex, options: shuffled.map((_, i) => i) };
+  return { puzzle: { figures: shuffled, dim }, solution: oddIndex, options: shuffled.map((_, i) => i) };
 }
 
 function verify(
@@ -101,6 +110,7 @@ export const oddOneOut: ExerciseModule<OddPuzzle, number, number> = {
         evidence={oddOneOut.evidence}
         columns={figs.length > 4 ? 3 : 2}
         accent={categoryColor('visual')}
+        explanation={`Figure ${(solution as number) + 1} differs in ${DIM_LABEL[(puzzle as OddPuzzle).dim] ?? (puzzle as OddPuzzle).dim} — the others all share it.`}
       />
     );
   },

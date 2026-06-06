@@ -203,6 +203,8 @@ export interface SessionSummary {
   estimationTotal?: number;
 }
 
+export type ChallengeLevel = 'relaxed' | 'balanced' | 'challenging';
+
 export interface UserSettings {
   theme: ThemeMode;
   reducedMotion: boolean;
@@ -211,6 +213,8 @@ export interface UserSettings {
   sound: boolean;
   /** Spoken feedback via speech synthesis. */
   voice: boolean;
+  /** Biases generated difficulty up or down on top of adaptive rating. */
+  challenge: ChallengeLevel;
 }
 
 export interface UserState {
@@ -228,5 +232,6 @@ export interface UserState {
   reflections: SavedReflection[];
   recentReflectionIds: string[]; // for no-repeat-within-30-days
   summaries: SessionSummary[];
+  achievements: string[]; // unlocked achievement ids
   settings: UserSettings;
 }
