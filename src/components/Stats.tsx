@@ -6,10 +6,12 @@ import { mean, pct } from '../lib/scoring';
 import { allModules } from '../engine/registry';
 import '../engine/modules';
 import { categoryColor } from '../lib/categories';
+import { ACHIEVEMENTS, earnedAchievementIds } from '../lib/achievements';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { ReliabilityDiagram } from './ui/ReliabilityDiagram';
 import { Sparkline } from './ui/Sparkline';
+import { Heatmap } from './ui/Heatmap';
 import { Journal } from './Journal';
 
 interface Props {
@@ -36,6 +38,12 @@ function Metric({ label, value, sub }: { label: string; value: string; sub?: str
 export function Stats({ user, onHome }: Props) {
   const [showJournal, setShowJournal] = useState(false);
   const todayKey = dailyKey();
+
+  const completedDays = useMemo(
+    () => new Set([...user.summaries.map((s) => s.dateKey), ...(user.lastCompletedDate ? [user.lastCompletedDate] : [])]),
+    [user.summaries, user.lastCompletedDate],
+  );
+  const earnedSet = useMemo(() => new Set(earnedAchievementIds(user)), [user]);
 
   const allPoints = useMemo(
     () => user.brierHistory.flatMap((b) => b.points),
@@ -69,6 +77,38 @@ export function Stats({ user, onHome }: Props) {
             <Metric label="Current streak" value={`${liveStreak(user, todayKey)}`} sub="days" />
             <Metric label="Best streak" value={`${user.longestStreak}`} sub="days" />
             <Metric label="Sessions" value={`${user.sessionsCompleted}`} sub="completed" />
+          </div>
+        </Card>
+
+        {/* Activity heatmap */}
+        <Card className="md:col-span-2">
+          <h2 className="mb-3 text-h3 text-ink">Activity</h2>
+          <Heatmap completed={completedDays} />
+        </Card>
+
+        {/* Achievements */}
+        <Card className="md:col-span-2">
+          <h2 className="mb-3 text-h3 text-ink">
+            Achievements <span className="text-small font-normal text-muted">{earnedSet.size}/{ACHIEVEMENTS.length}</span>
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {ACHIEVEMENTS.map((a) => {
+              const got = earnedSet.has(a.id);
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-2 rounded-sm border p-2"
+                  style={{ borderColor: 'var(--line)', opacity: got ? 1 : 0.45 }}
+                  title={a.description}
+                >
+                  <span className="text-h3" aria-hidden style={{ filter: got ? 'none' : 'grayscale(1)' }}>{a.icon}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-small font-medium text-ink">{a.title}</p>
+                    <p className="truncate text-small text-muted">{got ? 'Unlocked' : a.description}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Card>
 

@@ -145,6 +145,7 @@ export const numberSequence: ExerciseModule<SeqPuzzle, number, number> = {
         evidence={numberSequence.evidence}
         columns={2}
         accent={categoryColor('logic')}
+        explanation={`The pattern: ${p.hint}. So the next term is ${solution}.`}
       />
     );
   },

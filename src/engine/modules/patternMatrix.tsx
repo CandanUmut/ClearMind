@@ -29,7 +29,16 @@ const RULES: Record<string, Rule> = {
 
 interface MatrixPuzzle {
   grid: (CellSpec | null)[][]; // [2][2] is null (the missing cell)
+  rules: string[]; // rule ids applied, for the explanation
 }
+
+const RULE_DESC: Record<string, string> = {
+  countByCol: 'the number of shapes increases left to right',
+  rotateByRow: 'the shapes rotate 90° further down each row',
+  shadeByCol: 'the fill changes across each row',
+  sizeByRow: 'the shapes grow larger down each row',
+  kindByRow: 'the shape type changes down each row',
+};
 
 function applyRules(base: CellSpec, rules: Rule[], r: number, c: number): CellSpec {
   let cell: CellSpec = { ...base };
@@ -101,7 +110,7 @@ export function generatePatternMatrix(
   if (distractors.length < 5) throw new Error('patternMatrix: insufficient distractors');
 
   const options = shuffle(rng, [correct, ...distractors]);
-  return { puzzle: { grid }, solution: correct, options };
+  return { puzzle: { grid, rules: ruleNames }, solution: correct, options };
 }
 
 function verify(
@@ -112,7 +121,7 @@ function verify(
   return { correct, ratingSignal: correct ? 1 : 0, payload: { correct } };
 }
 
-function MatrixPrompt({ grid }: MatrixPuzzle) {
+function MatrixPrompt({ grid }: { grid: (CellSpec | null)[][] }) {
   return (
     <div className="mx-auto grid w-full max-w-[300px] grid-cols-3 gap-2 rounded border border-line bg-surface p-3 shadow-1">
       {grid.flat().map((cell, i) => (
@@ -163,6 +172,9 @@ export const patternMatrix: ExerciseModule<MatrixPuzzle, CellSpec, CellSpec> = {
       evidence={patternMatrix.evidence}
       columns={3}
       accent={categoryColor('visual')}
+      explanation={`Across the grid, ${(puzzle as MatrixPuzzle).rules
+        .map((r) => RULE_DESC[r])
+        .join(', and ')}. The missing cell is ${describeCell(solution as CellSpec)}.`}
     />
   ),
   summarize: (_ex, _answer, result, summary) => {

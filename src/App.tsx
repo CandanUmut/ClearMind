@@ -6,6 +6,7 @@ import { buildPracticeSession, buildSession } from './engine/session';
 import { completeDailySession } from './lib/streak';
 import { sound } from './lib/sound';
 import { clearChunkReloadGuard, lazyRetry } from './lib/lazyRetry';
+import { newlyEarned, type Achievement } from './lib/achievements';
 import { Home } from './components/Home';
 import { Onboarding } from './components/Onboarding';
 import { SessionRunner } from './components/SessionRunner';
@@ -20,8 +21,9 @@ const Explore = lazyRetry(() => import('./components/Explore').then((m) => ({ de
 const EndlessPractice = lazyRetry(() =>
   import('./components/EndlessPractice').then((m) => ({ default: m.EndlessPractice })),
 );
+const Settings = lazyRetry(() => import('./components/Settings').then((m) => ({ default: m.Settings })));
 
-type View = 'home' | 'session' | 'results' | 'stats' | 'about' | 'explore' | 'practiceModule';
+type View = 'home' | 'session' | 'results' | 'stats' | 'about' | 'explore' | 'practiceModule' | 'settings';
 
 export default function App() {
   const { state, update } = useUserState();
@@ -31,6 +33,7 @@ export default function App() {
   const [practice, setPractice] = useState(false);
   const [practiceModuleId, setPracticeModuleId] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [unlocked, setUnlocked] = useState<Achievement[]>([]);
 
   const todayKey = useMemo(() => dailyKey(), []);
   const debugEnabled = useMemo(() => {
@@ -56,6 +59,19 @@ export default function App() {
     sound.configure({ sound: state.settings.sound, voice: state.settings.voice });
   }, [state.settings.sound, state.settings.voice]);
 
+  // Unlock achievements reactively once state has settled (after per-block
+  // commits + the session completion flush). newlyEarned returns [] once stored,
+  // so this never loops; the dedup guards a transient double-fire.
+  useEffect(() => {
+    const fresh = newlyEarned(state);
+    if (fresh.length === 0) return;
+    update((p) => ({ ...p, achievements: [...new Set([...p.achievements, ...fresh.map((a) => a.id)])] }));
+    setUnlocked((prev) => {
+      const ids = new Set(prev.map((a) => a.id));
+      return [...prev, ...fresh.filter((a) => !ids.has(a.id))];
+    });
+  }, [state, update]);
+
   // Cycle: muted → chimes → chimes + voice → muted.
   function cycleAudio() {
     update((p) => {
@@ -79,6 +95,7 @@ export default function App() {
 
   function startDaily() {
     setPractice(false);
+    setUnlocked([]);
     setSession(buildSession(todayKey, state));
     setView('session');
   }
@@ -140,6 +157,7 @@ export default function App() {
           summary={summary}
           streak={state.streak}
           practice={practice}
+          unlocked={unlocked}
           onHome={() => setView('home')}
           onStats={() => setView('stats')}
         />
@@ -160,6 +178,27 @@ export default function App() {
       screen = (
         <Suspense fallback={loading}>
           <About onBack={() => setView('home')} />
+        </Suspense>
+      );
+      break;
+
+    case 'settings':
+      screen = (
+        <Suspense fallback={loading}>
+          <Settings
+            user={state}
+            update={update}
+            onBack={() => setView('home')}
+            onAbout={() => setView('about')}
+            onResetData={() => {
+              try {
+                window.localStorage.removeItem('clearmind:user:v1');
+              } catch {
+                /* ignore */
+              }
+              window.location.reload();
+            }}
+          />
         </Suspense>
       );
       break;
@@ -203,6 +242,7 @@ export default function App() {
           onExplore={() => setView('explore')}
           onStats={() => setView('stats')}
           onAbout={() => setView('about')}
+          onSettings={() => setView('settings')}
           onToggleTheme={toggleTheme}
           onCycleAudio={cycleAudio}
           onEveningCheck={eveningCheck}

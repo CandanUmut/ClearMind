@@ -189,6 +189,7 @@ export const wordProblem: ExerciseModule<WPPuzzle, number, number> = {
         evidence={wordProblem.evidence}
         columns={2}
         accent={categoryColor('problem')}
+        explanation={`${p.worked}${p.unit ? ` ${p.unit}` : ''}.`}
       />
     );
   },
